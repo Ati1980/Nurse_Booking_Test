@@ -1,0 +1,1106 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --primary-blue: #2563eb;
+  --primary-glow: rgba(59, 130, 246, 0.45);
+}
+
+.hidden {
+  display: none !important;
+}
+
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+body {
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(circle at 10% 10%, #17386d 0%, #0c234b 45%, #06152e 100%);
+  min-height: 100vh;
+  color: #0f172a;
+  position: relative;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: 'Prompt', 'Sarabun', sans-serif;
+}
+
+/* ================= Ambient Glow Effects ================= */
+.ambient-glow-1 {
+  position: fixed;
+  top: -100px;
+  left: 15%;
+  width: 450px;
+  max-width: 80vw;
+  height: 450px;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.32) 0%, rgba(37, 99, 235, 0.15) 50%, transparent 75%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float-glow 14s ease-in-out infinite alternate;
+}
+
+.ambient-glow-2 {
+  position: fixed;
+  bottom: -120px;
+  right: 5%;
+  width: 420px;
+  max-width: 80vw;
+  height: 420px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, rgba(59, 130, 246, 0.15) 50%, transparent 75%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float-glow 18s ease-in-out infinite alternate-reverse;
+}
+
+.ambient-glow-3 {
+  position: fixed;
+  top: 35%;
+  right: 20%;
+  width: 320px;
+  max-width: 70vw;
+  height: 320px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, transparent 70%);
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes float-glow {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, 20px) scale(1.05); }
+  100% { transform: translate(-20px, 35px) scale(0.95); }
+}
+
+/* ================= Glassmorphism Core Classes ================= */
+.glass-container {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 25px 60px -15px rgba(2, 6, 23, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+/* Theme Header อ่อนลง แต่สดใส (Soft Royal Blue & Cyan Luminous Glass) */
+.glass-header {
+  background: linear-gradient(135deg, rgba(30, 80, 210, 0.88) 0%, rgba(14, 165, 233, 0.82) 50%, rgba(59, 130, 246, 0.88) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.25);
+}
+
+/* ================= View Navigation Switcher Pills (Active vs Inactive) ================= */
+.nav-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+@media (max-width: 639px) {
+  .nav-tab-btn {
+    padding: 0.35rem 0.25rem;
+    font-size: 0.72rem;
+    gap: 0.25rem;
+    flex: 1 1 0%;
+    justify-content: center;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .nav-tab-btn-active {
+    transform: none !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2) !important;
+  }
+}
+
+.nav-tab-btn-inactive {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.nav-tab-btn-inactive:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+.nav-tab-btn-active {
+  background: #ffffff !important;
+  color: #0f172a !important; /* deep high-contrast navy */
+  font-weight: 800 !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25), 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 16px rgba(56, 189, 248, 0.45) !important;
+  transform: translateY(-1px) scale(1.02);
+}
+
+.nav-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #dbeafe; /* bg-blue-100 */
+  color: #1d4ed8; /* text-blue-700 */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.nav-active-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background-color: #2563eb;
+  box-shadow: 0 0 6px #2563eb;
+  animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(219, 234, 254, 0.9);
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.06);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 16px 36px rgba(30, 58, 138, 0.14);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  transition: all 0.2s ease;
+}
+.glass-input:focus {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.glass-modal {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.45);
+}
+
+/* ================= Calendar Grid Layout (Responsive & Fit Mobile without slide) ================= */
+.calendar-grid-header {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2.5px;
+  width: 100%;
+}
+
+.calendar-grid-body {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2.5px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .calendar-grid-header,
+  .calendar-grid-body {
+    gap: 6px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .calendar-grid-header,
+  .calendar-grid-body {
+    gap: 8px;
+  }
+}
+
+.calendar-empty-cell {
+  background: rgba(241, 245, 249, 0.35);
+  border: 1px dashed rgba(203, 213, 225, 0.6);
+  border-radius: 10px;
+  min-height: 80px;
+}
+
+.calendar-day-cell {
+  min-height: 88px;
+  border-radius: 14px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (min-width: 640px) {
+  .calendar-day-cell {
+    min-height: 100px;
+    border-radius: 18px;
+  }
+}
+
+/* Main Calendar specific day cells (Clean & Multi-shift without names) */
+.main-cal-empty-cell {
+  background: rgba(241, 245, 249, 0.25);
+  border: 1px dashed rgba(203, 213, 225, 0.5);
+  border-radius: 8px;
+  min-height: 80px;
+}
+@media (min-width: 640px) {
+  .main-cal-empty-cell {
+    border-radius: 14px;
+    min-height: 120px;
+  }
+}
+@media (min-width: 1024px) {
+  .main-cal-empty-cell {
+    border-radius: 18px;
+    min-height: 155px;
+  }
+}
+
+.main-cal-day-cell {
+  min-height: 64px;
+  border-radius: 6px;
+  padding: 2px 1.5px;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .main-cal-day-cell {
+    min-height: 120px;
+    padding: 6px 4px;
+    border-radius: 14px;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-cal-day-cell {
+    min-height: 155px;
+    padding: 8px 6px;
+    border-radius: 18px;
+  }
+}
+
+/* Interactive shift rows inside main calendar (Fit to mobile, shows only count) */
+.cal-shift-row {
+  border-radius: 5px;
+  padding: 2px 2px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border-width: 1px;
+  border-style: solid;
+  position: relative;
+  text-align: center;
+}
+.cal-shift-row:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  filter: brightness(1.03);
+}
+@media (min-width: 640px) {
+  .cal-shift-row {
+    border-radius: 8px;
+    padding: 3px 4px;
+    border-width: 1.5px;
+  }
+}
+@media (min-width: 1024px) {
+  .cal-shift-row {
+    border-radius: 10px;
+    padding: 4px 6px;
+  }
+}
+
+/* 1. เวรที่ยังไม่มีคนเลือก (0 คน) - ปรับโทนสีให้อ่อนลง นุ่มนวล สบายตา */
+.cal-shift-unassigned {
+  background: linear-gradient(135deg, #fffafa 0%, #fff1f2 100%) !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.05) !important;
+}
+
+.cal-shift-unassigned:hover {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe4e6 100%) !important;
+  border-color: #fda4af !important;
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.1) !important;
+}
+
+/* 2. เวรที่มีคนเลือกแล้ว (ตามจำนวนพยาบาล) */
+.cal-shift-assigned {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+  box-shadow: 0 1px 3px rgba(14, 165, 233, 0.12);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: #93c5fd;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+/* Sticky columns for Matrix Table */
+.sticky-col-1 {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+}
+.sticky-col-2 {
+  position: sticky;
+  left: 38px;
+  z-index: 20;
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+}
+.sticky-col-3 {
+  position: sticky;
+  left: 120px;
+  z-index: 20;
+  min-width: 140px;
+  max-width: 175px;
+}
+
+@media (max-width: 639px) {
+  .sticky-col-1 {
+    width: 28px;
+    min-width: 28px;
+    max-width: 28px;
+  }
+  .sticky-col-2 {
+    left: 28px;
+    width: 62px;
+    min-width: 62px;
+    max-width: 62px;
+  }
+  .sticky-col-3 {
+    left: 90px;
+    min-width: 110px;
+    max-width: 130px;
+  }
+}
+
+/* Zebra Striping for Matrix Table (สลับสีแถว/ช่อง) */
+.matrix-row-even td {
+  background-color: #f8fafc;
+}
+.matrix-row-odd td {
+  background-color: #ffffff;
+}
+
+.matrix-row-even .matrix-sticky-cell {
+  background-color: #f1f5f9 !important;
+}
+.matrix-row-odd .matrix-sticky-cell {
+  background-color: #ffffff !important;
+}
+
+/* Weekend cells inside even/odd rows */
+.matrix-row-even td.weekend-cell {
+  background-color: #fee2e2 !important;
+}
+.matrix-row-odd td.weekend-cell {
+  background-color: #fff1f2 !important;
+}
+
+/* Row Hover Highlight across all 31 days and sticky columns */
+.matrix-row:hover td,
+.matrix-row:hover .matrix-sticky-cell {
+  background-color: #dbeafe !important;
+}
+.matrix-row:hover td.weekend-cell {
+  background-color: #bfdbfe !important;
+}
+
+/* Shift Badges */
+.shift-tag {
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font-weight: 700;
+  display: inline-block;
+  user-select: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.shift-m {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+.shift-m:hover {
+  background: #bae6fd;
+}
+
+.shift-a {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+.shift-a:hover {
+  background: #fde68a;
+}
+
+.shift-n {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  color: #6b21a8;
+  border: 1px solid #d8b4fe;
+}
+.shift-n:hover {
+  background: #e9d5ff;
+}
+
+/* ================= Interactive Booking Modal Date Selector Buttons ================= */
+.booking-date-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 0.2rem;
+  border-radius: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.booking-date-btn.is-weekend,
+.booking-date-btn.is-sunday {
+  background-color: #fff1f2;
+  border-color: #fecdd3;
+  color: #be123c;
+}
+
+.booking-date-btn.is-saturday {
+  background-color: #faf5ff;
+  border-color: #e9d5ff;
+  color: #7e22ce;
+}
+
+.booking-date-btn:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+}
+
+.booking-date-btn.selected {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: #1e40af !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45) !important;
+  transform: scale(1.05);
+}
+
+.booking-date-btn .date-check-badge {
+  display: none;
+  font-size: 0.65rem;
+  font-weight: 900;
+  margin-top: 2px;
+}
+
+.booking-date-btn.selected .date-check-badge {
+  display: inline-block;
+}
+
+/* ================= Modern Vibrant Nurse Number Badges & Cards ================= */
+.nurse-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  border-radius: 0.65rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.nurse-num-badge:hover {
+  transform: scale(1.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.nurse-card-modern {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1.25rem;
+  padding: 0.85rem 1.15rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.nurse-card-modern:hover {
+  background: #ffffff;
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.12);
+}
+
+/* ================= Mobile & Tablet Anti-Flicker & Performance Optimization ================= */
+@media (max-width: 1024px) {
+  .ambient-glow-1,
+  .ambient-glow-2,
+  .ambient-glow-3 {
+    display: none !important;
+  }
+
+  .glass-container,
+  .glass-card,
+  .glass-header {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* ================= Mobile & Responsive Design Enhancements ================= */
+@media (max-width: 768px) {
+  .glass-header {
+    padding: 0.85rem !important;
+    border-radius: 1.25rem !important;
+  }
+  
+  .calendar-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+
+  .calendar-grid-header,
+  .calendar-grid-body {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .glass-modal {
+    padding: 1.25rem !important;
+    margin: 0.75rem !important;
+    border-radius: 1.5rem !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-grid-header,
+  .calendar-grid-body {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .sticky-col-2 {
+    width: 72px !important;
+    min-width: 72px !important;
+  }
+  .sticky-col-3 {
+    left: 110px !important;
+    min-width: 120px !important;
+  }
+}
+
+/* Print Optimization for Landscape A4 */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 6mm;
+  }
+  
+  body {
+    background: white !important;
+    padding: 0 !important;
+    font-size: 10px !important;
+  }
+  
+  header, .no-print, #cellEditModal, #bookingModal, #optimizeModal, #nurseLoginModal, #adminLoginModal, #shiftActionModal, .toolbar-actions, .ambient-glow-1, .ambient-glow-2, .ambient-glow-3 {
+    display: none !important;
+  }
+  
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  
+  .print-header h2 {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
+  }
+  
+  .sticky-col-1, .sticky-col-2, .sticky-col-3 {
+    position: static !important;
+  }
+  
+  table {
+    width: 100% !important;
+    border: 1px solid #999 !important;
+  }
+  
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 2px !important;
+    font-size: 9px !important;
+  }
+  
+  .shift-tag {
+    border: none !important;
+    padding: 1px 2px !important;
+    font-size: 8.5px !important;
+  }
+}
+
+/* ================= Shift Multi-Select Toggle Buttons (ปุ่มยุบ ขึ้นลง เลือกพร้อมกันได้) ================= */
+.shift-toggle-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 0.5rem;
+  border-radius: 1.15rem;
+  border: 2px solid;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.shift-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px -2px rgba(0, 0, 0, 0.12);
+}
+
+.shift-toggle-btn:active {
+  transform: translateY(3px) scale(0.97);
+}
+
+/* Morning unselected */
+.shift-toggle-m {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+/* Morning selected (tactile sunken/pressed effect) */
+.shift-toggle-m:has(input:checked),
+.shift-toggle-m.is-active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  transform: translateY(3px) scale(0.98);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(14, 165, 233, 0.45) !important;
+}
+
+/* Afternoon unselected */
+.shift-toggle-a {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+/* Afternoon selected (tactile sunken/pressed effect) */
+.shift-toggle-a:has(input:checked),
+.shift-toggle-a.is-active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+  transform: translateY(3px) scale(0.98);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(245, 158, 11, 0.45) !important;
+}
+
+/* Night unselected */
+.shift-toggle-n {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+  color: #7e22ce;
+}
+
+/* Night selected (tactile sunken/pressed effect) */
+.shift-toggle-n:has(input:checked),
+.shift-toggle-n.is-active {
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%) !important;
+  border-color: #7e22ce !important;
+  color: #ffffff !important;
+  transform: translateY(3px) scale(0.98);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(168, 85, 247, 0.45) !important;
+}
+
+/* Check badge */
+.shift-toggle-btn .badge-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.shift-toggle-m:has(input:checked) .badge-check,
+.shift-toggle-m.is-active .badge-check {
+  display: flex;
+  color: #0369a1;
+}
+
+.shift-toggle-a:has(input:checked) .badge-check,
+.shift-toggle-a.is-active .badge-check {
+  display: flex;
+  color: #b45309;
+}
+
+.shift-toggle-n:has(input:checked) .badge-check,
+.shift-toggle-n.is-active .badge-check {
+  display: flex;
+  color: #7e22ce;
+}
+
+/* ================= Toast Notification System ================= */
+.app-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.94);
+  color: #ffffff;
+  padding: 0.85rem 1.35rem;
+  border-radius: 1.15rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   DARK MODE SYSTEM & MOBILE-FIRST ERGONOMICS
+   ========================================================================== */
+
+/* Dark Mode Transitions */
+html {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+  background: radial-gradient(circle at 10% 10%, #0e1726 0%, #080d1a 50%, #03060f 100%) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Ambient glow subtle adjustment in dark mode */
+html.dark .ambient-glow-1 {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.16) 0%, rgba(37, 99, 235, 0.08) 50%, transparent 75%);
+}
+html.dark .ambient-glow-2 {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.14) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 75%);
+}
+html.dark .ambient-glow-3 {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, transparent 70%);
+}
+
+/* Dark Glass Containers & Cards */
+html.dark .glass-container {
+  background: rgba(15, 23, 42, 0.94) !important;
+  border-color: rgba(51, 65, 85, 0.75) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(51, 65, 85, 0.5) !important;
+  color: #f8fafc !important;
+}
+
+html.dark .glass-card {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(51, 65, 85, 0.8) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  color: #f8fafc !important;
+}
+
+html.dark .glass-card:hover {
+  background: rgba(30, 41, 59, 0.98) !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .glass-header {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 58, 138, 0.9) 55%, rgba(15, 23, 42, 0.96) 100%) !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.7) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+html.dark .glass-input {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+html.dark .glass-input:focus {
+  background: #0f172a !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+}
+
+html.dark .glass-modal {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(51, 65, 85, 0.9) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+/* Dark Mode Main Calendar Cells */
+html.dark .main-cal-day-cell {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-color: rgba(51, 65, 85, 0.75) !important;
+  color: #f8fafc !important;
+}
+
+html.dark .main-cal-empty-cell {
+  background: rgba(15, 23, 42, 0.4) !important;
+  border-color: rgba(51, 65, 85, 0.4) !important;
+}
+
+html.dark .cal-shift-assigned {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.35) 0%, rgba(15, 23, 42, 0.7) 100%) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  color: #bfdbfe !important;
+}
+
+html.dark .cal-shift-unassigned {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.12) 0%, rgba(159, 18, 57, 0.08) 100%) !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+  color: #fecdd3 !important;
+  box-shadow: none !important;
+}
+
+html.dark .cal-shift-unassigned:hover {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.18) 0%, rgba(159, 18, 57, 0.12) 100%) !important;
+  border-color: rgba(251, 113, 133, 0.5) !important;
+}
+
+/* Dark Mode Date Buttons in Quick Booking Modal */
+html.dark .booking-date-btn {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+html.dark .booking-date-btn:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: #60a5fa !important;
+}
+
+html.dark .booking-date-btn.selected {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+/* Dark Mode Form Selects & Options */
+html.dark select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* Dark Mode Tables in Excel & Admin View */
+html.dark table {
+  color: #f8fafc;
+}
+
+html.dark th {
+  background-color: #1e293b;
+  border-color: #334155 !important;
+  color: #f1f5f9;
+}
+
+html.dark td {
+  border-color: #334155 !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+html.dark .bg-white {
+  background-color: #0f172a !important;
+  color: #f8fafc;
+}
+
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-blue-950 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-blue-200 {
+  border-color: rgba(51, 65, 85, 0.7) !important;
+}
+
+/* Dark Mode Toast */
+html.dark .app-toast {
+  background: rgba(30, 41, 59, 0.96) !important;
+  border-color: rgba(71, 85, 105, 0.7) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Mobile Slide-Up Bottom Sheet Animations */
+@media (max-width: 639px) {
+  .modal-sheet-panel {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    animation: slideUpSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Safe Area Inset Utility */
+.safe-area-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Mobile Touch Target Standards */
+.mobile-tap-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* ปุ่มกดตัวเลขสไตล์เครื่องคิดเลข */
+.keypad-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: ui-monospace, monospace;
+  color: #1e293b;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.keypad-btn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+.keypad-btn:active {
+  transform: scale(0.94);
+  background-color: #f1f5f9;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Dark Mode สำหรับ Keypad */
+.dark .keypad-btn {
+  color: #f8fafc;
+  background-color: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.dark .keypad-btn:hover {
+  background-color: #334155;
+  border-color: #475569;
+}
+
+.dark .keypad-btn:active {
+  background-color: #0f172a;
+}
