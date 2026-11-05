@@ -129,12 +129,16 @@ let defaultYear = advanceDate.getFullYear();
 if (defaultYear < 2026) defaultYear = 2026;
 if (defaultYear > 2032) defaultYear = 2032;
 
+// กำหนดว่าเดือนใดเป็น 3 เวร (ธ.ค.=11, ม.ค.=0, ก.พ.=1, มี.ค.=2) นอกนั้นเป็น 2 เวร
 function getDefaultShiftModeForMonth(targetMonth) {
   if (targetMonth === 11 || targetMonth === 0 || targetMonth === 1 || targetMonth === 2) {
     return 3;
   }
   return 2;
 }
+
+// กำหนดโหมดเวรเริ่มต้นตามเดือนที่เลือกดูปัจจุบันเสมอ
+let shiftMode = getDefaultShiftModeForMonth(currentMonth);
 
 let calculatedDefaultMode = getDefaultShiftModeForMonth(defaultMonth);
 // แก้จุดที่ 1: ประกาศตัวแปร shiftMode เพียงครั้งเดียว
@@ -219,11 +223,15 @@ function getActiveShifts() {
 
 window.setShiftMode = function (mode) {
   shiftMode = mode;
-  localStorage.setItem('nurse_shift_mode', mode);
+  // บันทึกเฉพาะเมื่อผู้ใช้จงใจกดเปลี่ยนเอง
+  try {
+    sessionStorage.setItem(`nurse_shift_mode_${currentYear}_${currentMonth}`, mode);
+  } catch (e) { }
   updateShiftModeUI();
   renderPublicDashboard();
   if (activeView === 'personal') renderNurseCalendar();
   if (activeView === 'admin') renderAdminView();
+  if (activeView === 'excel') renderExcelView('userExcelViewContent');
 };
 
 function updateShiftModeUI() {
@@ -3371,8 +3379,8 @@ window.resetNurseForm = function () {
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
   try {
-    const savedShiftMode = localStorage.getItem('nurse_shift_mode');
-    if (savedShiftMode) shiftMode = parseInt(savedShiftMode, 10);
+    // กำหนดโหมดเวรอัตโนมัติตามเดือนปัจจุบันที่ระบบเปิดขึ้นมา (ธ.ค.-มี.ค. = 3 เวร, เดือนอื่น = 2 เวร)
+    shiftMode = getDefaultShiftModeForMonth(currentMonth);
     updateShiftModeUI();
 
     initTheme();
@@ -3384,20 +3392,22 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateRealTimeClock, 1000);
 
     function onMonthYearChanged() {
-      const autoMode = getDefaultShiftModeForMonth(currentMonth);
-      setShiftMode(autoMode);
+  // สลับโหมดเวร 2 หรือ 3 เวรทันทีตามเดือนที่เลือกใหม่
+  const autoMode = getDefaultShiftModeForMonth(currentMonth);
+  shiftMode = autoMode;
+  updateShiftModeUI();
 
-      loadMonthState();
-      updateNavSwitcher(activeView);
-      renderPublicDashboard();
-      if (activeView === 'personal') renderNurseCalendar();
-      if (activeView === 'admin') renderAdminView();
-      if (activeView === 'excel') renderExcelView('userExcelViewContent');
-      
-      if (typeof window.fetchRosterFromSheet === 'function') {
-        window.fetchRosterFromSheet();
-      }
-    }
+  loadMonthState();
+  updateNavSwitcher(activeView);
+  renderPublicDashboard();
+  if (activeView === 'personal') renderNurseCalendar();
+  if (activeView === 'admin') renderAdminView();
+  if (activeView === 'excel') renderExcelView('userExcelViewContent');
+  
+  if (typeof window.fetchRosterFromSheet === 'function') {
+    window.fetchRosterFromSheet();
+  }
+}
 
     const monthSel = document.getElementById('monthSelect');
     const yearSel = document.getElementById('yearSelect');
