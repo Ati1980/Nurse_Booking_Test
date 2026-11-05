@@ -137,13 +137,7 @@ function getDefaultShiftModeForMonth(targetMonth) {
   return 2;
 }
 
-// กำหนดโหมดเวรเริ่มต้นตามเดือนที่เลือกดูปัจจุบันเสมอ
-let shiftMode = getDefaultShiftModeForMonth(currentMonth);
-
-let calculatedDefaultMode = getDefaultShiftModeForMonth(defaultMonth);
-// แก้จุดที่ 1: ประกาศตัวแปร shiftMode เพียงครั้งเดียว
-let shiftMode = parseInt(localStorage.getItem('nurse_shift_mode') || calculatedDefaultMode.toString(), 10);
-
+// 1. ประกาศตัวแปรสถานะและเดือนปัจจุบันก่อน
 let currentUser = null;
 let currentYear = defaultYear;
 let currentMonth = defaultMonth;
@@ -151,6 +145,9 @@ let activeView = 'dashboard';
 let adminActiveSubView = 'matrix';
 let dashboardShiftFilter = 'ALL';
 let searchQuery = '';
+
+// 2. กำหนดโหมดเวรเริ่มต้นตามเดือนที่เลือกดู (currentMonth) เพียงครั้งเดียว
+let shiftMode = getDefaultShiftModeForMonth(currentMonth);
 
 let monthState = {
   round: 1,
