@@ -380,20 +380,153 @@ window.togglePasswordVisibility = function (inputId, iconId) {
   }
 };
 
-window.openNurseLoginModal = function (optionalContext) {
-  const modal = document.getElementById('nurseLoginModal');
-  const sel = document.getElementById('modalLoginNurseIdSelect');
+// =========================================================================
+// 🔑 REDESIGNED NURSE & ADMIN LOGIN (AUTO-SUBMIT & VISUAL USER SELECTION)
+// =========================================================================
+
+let keypadCurrentPin = "";
+let adminKeypadCurrentPin = "";
+
+// เปิด/ปิด Dropdown รายชื่อพยาบาลแบบมีแถบสีสัน
+window.toggleNurseListDropdown = function () {
+  const dd = document.getElementById('nurseListDropdown');
+  if (dd) dd.classList.toggle('hidden');
+};
+
+// เลือกพยาบาลจากรายการ และอัปเดตสีสันของการ์ดทันที
+window.selectNurseForLogin = function (nurseId) {
+  const nurse = NURSES.find(n => n.id === nurseId);
+  if (!nurse) return;
+
+  const hiddenInput = document.getElementById('modalLoginNurseIdSelect');
+  if (hiddenInput) hiddenInput.value = nurse.id;
+
+  const badgeNum = document.getElementById('nurseBadgeNum');
+  const badgeName = document.getElementById('nurseBadgeName');
+  const badgeId = document.getElementById('nurseBadgeId');
+  const card = document.getElementById('nurseSelectedCard');
+
+  if (badgeNum) {
+    badgeNum.innerText = nurse.num;
+    badgeNum.style.backgroundColor = nurse.color || '#2563eb';
+    badgeNum.style.color = nurse.textColor || '#ffffff';
+  }
+  if (badgeName) badgeName.innerText = nurse.name;
+  if (badgeId) badgeId.innerText = nurse.id;
+  if (card && nurse.border) {
+    card.style.borderColor = nurse.border;
+  }
+
+  // ซ่อน Dropdown และเคลียร์ PIN เมื่อเปลี่ยนคน
+  const dd = document.getElementById('nurseListDropdown');
+  if (dd) dd.classList.add('hidden');
+  clearKeypadPin();
+};
+
+// เรนเดอร์การ์ดรายชื่อพยาบาลทั้งหมดลงใน Dropdown
+function renderNurseDropdownList() {
+  const container = document.getElementById('nurseListDropdown');
+  if (!container) return;
+
+  container.innerHTML = NURSES.map(n => `
+    <div onclick="selectNurseForLogin('${n.id}')"
+      class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 shadow-xs"
+          style="background-color: ${n.color || '#2563eb'}; color: ${n.textColor || '#ffffff'};">
+          ${n.num}
+        </span>
+        <span class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${n.name}</span>
+      </div>
+      <span class="text-[10px] font-mono font-bold text-slate-400 shrink-0">${n.id}</span>
+    </div>
+  `).join('');
+}
+
+// อัปเดตจุด PIN และความยาว (พยาบาล)
+function updateKeypadDotsUI() {
   const pinInput = document.getElementById('modalLoginNursePin');
+  if (pinInput) pinInput.value = keypadCurrentPin;
+
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`pinDot${i}`);
+    if (dot) {
+      if (i < keypadCurrentPin.length) {
+        dot.className = "w-4 h-4 rounded-full bg-blue-600 border-2 border-blue-500 shadow-md shadow-blue-500/40 transform scale-110 transition-all duration-200 animate-pulse";
+      } else {
+        dot.className = "w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all duration-200";
+      }
+    }
+  }
+
+  const statusText = document.getElementById('pinLengthStatus');
+  if (statusText) statusText.innerText = `${keypadCurrentPin.length} / 4`;
+}
+
+// กดตัวเลขพยาบาล (ครบ 4 หลัก Auto-Submit ทันที ไม่ต้องกดปุ่ม)
+window.pressKeypad = function (digit) {
+  if (keypadCurrentPin.length < 4) {
+    keypadCurrentPin += digit;
+    updateKeypadDotsUI();
+
+    if (keypadCurrentPin.length === 4) {
+      setTimeout(() => {
+        submitKeypadLogin();
+      }, 100);
+    }
+  }
+};
+
+window.backspaceKeypadPin = function () {
+  if (keypadCurrentPin.length > 0) {
+    keypadCurrentPin = keypadCurrentPin.slice(0, -1);
+    updateKeypadDotsUI();
+  }
+};
+
+window.clearKeypadPin = function () {
+  keypadCurrentPin = "";
+  updateKeypadDotsUI();
+};
+
+window.submitKeypadLogin = function () {
+  const hiddenInput = document.getElementById('modalLoginNurseIdSelect');
+  const nurseId = hiddenInput ? hiddenInput.value : (NURSES[0] && NURSES[0].id);
+  if (!nurseId) {
+    alert("กรุณาเลือกรหัสพยาบาล");
+    return;
+  }
+  if (keypadCurrentPin.length !== 4) {
+    alert("กรุณากรอกรหัสผ่าน PIN ให้ครบ 4 หลัก");
+    return;
+  }
+
+  const success = loginAsNurse(nurseId, keypadCurrentPin);
+  if (!success) {
+    clearKeypadPin();
+  }
+};
+
+window.openNurseLoginModal = function (optionalContext) {
+  clearKeypadPin();
+  renderNurseDropdownList();
+
+  const modal = document.getElementById('nurseLoginModal');
   const banner = document.getElementById('nurseLoginTargetBanner');
 
-  if (sel) sel.innerHTML = NURSES.map(n => `<option value="${n.id}">[${n.id}] ${n.name}</option>`).join('');
-  if (pinInput) pinInput.value = '';
+  // เลือกคนแรกเป็นค่าเริ่มต้นถ้ายังไม่มีการเลือก
+  const currentSelectedId = document.getElementById('modalLoginNurseIdSelect')?.value;
+  if (!currentSelectedId && NURSES.length > 0) {
+    selectNurseForLogin(NURSES[0].id);
+  } else if (currentSelectedId) {
+    selectNurseForLogin(currentSelectedId);
+  }
 
   if (optionalContext && optionalContext.day && optionalContext.shift) {
     pendingShiftSelection = optionalContext;
     if (banner) {
       banner.classList.remove('hidden');
-      banner.innerHTML = `📌 คุณกำลังจะเลือก: <b>วันที่ ${optionalContext.day} ${SHIFTS[optionalContext.shift].name} (${SHIFTS[optionalContext.shift].time.split(' ')[0]})</b><br>กรุณาเลือกรหัสพยาบาลและกรอก PIN เพื่อยืนยันการจองเวรนี้`;
+      banner.innerHTML = `📌 คุณกำลังจะเลือก: <b>วันที่ ${optionalContext.day} ${SHIFTS[optionalContext.shift].name}</b><br>กรุณากด PIN 4 หลักเพื่อยืนยัน`;
     }
   } else {
     pendingShiftSelection = null;
@@ -403,7 +536,17 @@ window.openNurseLoginModal = function (optionalContext) {
   if (modal) modal.classList.remove('hidden');
 };
 
-let adminKeypadCurrentPin = "";
+window.closeNurseLoginModal = function () {
+  document.getElementById('nurseLoginModal')?.classList.add('hidden');
+  const dd = document.getElementById('nurseListDropdown');
+  if (dd) dd.classList.add('hidden');
+  pendingShiftSelection = null;
+  clearKeypadPin();
+};
+
+// =========================================================================
+// 🛡️ ADMIN KEYPAD & AUTO-SUBMIT
+// =========================================================================
 
 function updateAdminKeypadDotsUI() {
   const passInput = document.getElementById('modalAdminPasswordOnly');
@@ -424,6 +567,7 @@ function updateAdminKeypadDotsUI() {
   if (statusText) statusText.innerText = `${adminKeypadCurrentPin.length} / 4`;
 }
 
+// กดตัวเลข Admin (ครบ 4 หลัก Auto-Submit ทันที)
 window.pressAdminKeypad = function (digit) {
   if (adminKeypadCurrentPin.length < 4) {
     adminKeypadCurrentPin += digit;
@@ -432,7 +576,7 @@ window.pressAdminKeypad = function (digit) {
     if (adminKeypadCurrentPin.length === 4) {
       setTimeout(() => {
         submitAdminKeypadLogin();
-      }, 150);
+      }, 100);
     }
   }
 };
@@ -451,7 +595,7 @@ window.clearAdminKeypadPin = function () {
 
 window.submitAdminKeypadLogin = function () {
   if (adminKeypadCurrentPin.length < 4) {
-    alert("กรุณากดรหัสผ่าน Admin ให้ครบ 4 หลัก");
+    alert("กรุณากรอกรหัสผ่าน Admin ให้ครบ 4 หลัก");
     return;
   }
 
@@ -461,100 +605,15 @@ window.submitAdminKeypadLogin = function () {
   }
 };
 
-const originalOpenAdminLoginModal = window.openAdminLoginModal;
 window.openAdminLoginModal = function () {
   clearAdminKeypadPin();
-  if (typeof originalOpenAdminLoginModal === 'function') {
-    originalOpenAdminLoginModal();
-  }
-};
-
-window.closeNurseLoginModal = function () {
-  document.getElementById('nurseLoginModal')?.classList.add('hidden');
-  pendingShiftSelection = null;
-};
-
-let keypadCurrentPin = "";
-
-function updateKeypadDotsUI() {
-  const pinInput = document.getElementById('modalLoginNursePin');
-  if (pinInput) pinInput.value = keypadCurrentPin;
-
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById(`pinDot${i}`);
-    if (dot) {
-      if (i < keypadCurrentPin.length) {
-        dot.className = "w-4 h-4 rounded-full bg-blue-600 border-2 border-blue-500 shadow-md shadow-blue-500/40 transform scale-110 transition-all duration-200 animate-pulse";
-      } else {
-        dot.className = "w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all duration-200";
-      }
-    }
-  }
-
-  const statusText = document.getElementById('pinLengthStatus');
-  if (statusText) statusText.innerText = `${keypadCurrentPin.length} / 4`;
-}
-
-window.pressKeypad = function (digit) {
-  if (keypadCurrentPin.length < 4) {
-    keypadCurrentPin += digit;
-    updateKeypadDotsUI();
-
-    if (keypadCurrentPin.length === 4) {
-      setTimeout(() => {
-        submitKeypadLogin();
-      }, 150);
-    }
-  }
-};
-
-window.backspaceKeypadPin = function () {
-  if (keypadCurrentPin.length > 0) {
-    keypadCurrentPin = keypadCurrentPin.slice(0, -1);
-    updateKeypadDotsUI();
-  }
-};
-
-window.clearKeypadPin = function () {
-  keypadCurrentPin = "";
-  updateKeypadDotsUI();
-};
-
-window.submitKeypadLogin = function () {
-  const sel = document.getElementById('modalLoginNurseIdSelect');
-  const nurseId = sel ? sel.value : "";
-  if (!nurseId) {
-    alert("กรุณาเลือกรหัสพยาบาล");
-    return;
-  }
-  if (keypadCurrentPin.length !== 4) {
-    alert("กรุณากดรหัสผ่าน PIN ให้ครบ 4 หลัก");
-    return;
-  }
-
-  const success = loginAsNurse(nurseId, keypadCurrentPin);
-  if (!success) {
-    clearKeypadPin();
-  }
-};
-
-const originalOpenNurseLoginModal = window.openNurseLoginModal;
-window.openNurseLoginModal = function (optionalContext) {
-  clearKeypadPin();
-  if (typeof originalOpenNurseLoginModal === 'function') {
-    originalOpenNurseLoginModal(optionalContext);
-  }
-};
-
-window.openAdminLoginModal = function () {
   const modal = document.getElementById('adminLoginModal');
-  const passInput = document.getElementById('modalAdminPasswordOnly');
-  if (passInput) passInput.value = '';
   if (modal) modal.classList.remove('hidden');
 };
 
 window.closeAdminLoginModal = function () {
   document.getElementById('adminLoginModal')?.classList.add('hidden');
+  clearAdminKeypadPin();
 };
 
 function initAuth() {
