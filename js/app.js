@@ -4009,19 +4009,21 @@ window.executeFastClaim = async function (day, shift, btnElement) {
   const nurseId = currentUser.nurseId;
   const nurseName = currentUser.name || '';
 
-  const myTodayShifts = (monthState.roster && monthState.roster[nurseId] && monthState.roster[nurseId][day]) || [];
+  // ตรวจสอบกฎความปลอดภัยข้อ 8 (ห้ามเกิน 2 เวร/วัน, พักหลังควงบ่าย-ดึก)
+  const myTodayShifts = (monthState.roster && monthState.roster[nurseId] && (monthState.roster[nurseId][day] || monthState.roster[nurseId][String(day)])) || [];
   if (myTodayShifts.length >= 2) {
     alert("⚠️ คุณมีเวรในวันนี้ครบ 2 เวรแล้ว ไม่สามารถลงเพิ่มได้ตามเกณฑ์ความปลอดภัย");
     return;
   }
   if (shift === 'M' && day > 1) {
-    const prevShifts = (monthState.roster && monthState.roster[nurseId] && monthState.roster[nurseId][day - 1]) || [];
+    const prevShifts = (monthState.roster && monthState.roster[nurseId] && (monthState.roster[nurseId][day - 1] || monthState.roster[nurseId][String(day - 1)])) || [];
     if (prevShifts.includes('A') && prevShifts.includes('N')) {
       alert("⚠️ คุณควงเวรบ่าย+ดึกในวันก่อนหน้า ถูกระงับสิทธิ์เข้าเวรเช้าในวันนี้ตามเกณฑ์พักผ่อน");
       return;
     }
   }
 
+  // ล็อกปุ่มป้องกันการกดย้ำ
   if (btnElement) {
     btnElement.disabled = true;
     btnElement.innerHTML = `<span class="animate-spin text-xs">⏳</span><span>กำลัง CF...</span>`;
@@ -4029,25 +4031,35 @@ window.executeFastClaim = async function (day, shift, btnElement) {
   }
 
   try {
+    // 1. ดึงข้อมูลล่าสุดจาก Sheet แบบ Real-time เพื่อป้องกันการกดชนกัน (Race Condition)
     const checkRes = await fetch(`${GAS_API_URL}?year=${currentYear}&month=${currentMonth}&_nocache=${Date.now()}`);
     const checkData = await checkRes.json();
+    
     if (checkData.status === "success" && checkData.roster) {
+      // ซิงค์ตารางล่าสุดเข้า monthState.roster ทันทีเพื่อความแม่นยำ
+      monthState.roster = JSON.parse(JSON.stringify(checkData.roster));
+
+      // ตรวจสอบว่ามีพยาบาลท่านอื่นชิงกด CF เวรนี้ไปแล้วหรือไม่
       const isTaken = NURSES.some(n => {
-        const sList = (checkData.roster[n.id] && checkData.roster[n.id][day]) || [];
+        const sList = (monthState.roster[n.id] && (monthState.roster[n.id][day] || monthState.roster[n.id][String(day)])) || [];
         return sList.includes(shift);
       });
 
       if (isTaken) {
         alert("🚨 เสียใจด้วยครับ! มีพยาบาลท่านอื่นกด CF เวรนี้ตัดหน้าไปก่อนแล้ว");
-        await window.fetchRosterFromSheet(false);
+        saveMonthState();
         renderFastClaimList();
+        renderPublicDashboard();
         return;
       }
     }
 
+    // 2. ถ้ายังว่างอยู่ ให้เพิ่มเวรนี้เข้าของตนเอง
     if (!monthState.roster[nurseId]) monthState.roster[nurseId] = {};
     if (!monthState.roster[nurseId][day]) monthState.roster[nurseId][day] = [];
-    monthState.roster[nurseId][day].push(shift);
+    if (!monthState.roster[nurseId][day].includes(shift)) {
+      monthState.roster[nurseId][day].push(shift);
+    }
 
     const clientIp = await getClientIP();
     const payload = {
@@ -4071,16 +4083,23 @@ window.executeFastClaim = async function (day, shift, btnElement) {
 
     const resJson = await response.json();
     if (resJson.status === "success") {
+      // อัปเดต Hash ทันทีเพื่อป้องกันไม่ให้ Auto-fetch ดึงของเก่ามาทับ
+      lastKnownRosterHash = JSON.stringify(monthState.roster);
+      saveMonthState();
+
       triggerFireworks(1800);
       window.showToast?.(`⚡ คุณ CF เวรวันที่ ${day} (${SHIFTS[shift].name}) สำเร็จแล้ว!`);
       
-      saveMonthState();
+      // อัปเดตหน้าต่าง CF ทันที โดยเวรที่กดไปจะหายไป เหลือเฉพาะเวรที่ว่างจริง
+      renderFastClaimList();
       renderPublicDashboard();
       if (activeView === 'personal') renderNurseCalendar();
       if (activeView === 'excel') renderExcelView('userExcelViewContent');
-      renderFastClaimList();
     } else {
       alert("เกิดข้อผิดพลาดในการบันทึก: " + resJson.message);
+      // หากบันทึกไม่สำเร็จ ให้ดึงตารางจริงกลับมา
+      await window.fetchRosterFromSheet(false);
+      renderFastClaimList();
     }
   } catch (err) {
     console.error("Fast Claim Error:", err);
