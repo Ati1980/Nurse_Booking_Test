@@ -600,8 +600,8 @@
         <!-- Shift Mode Switcher -->
         <div class="flex items-center justify-between text-xs pt-1 flex-wrap gap-2">
           <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-700">⚙️ โหมดจัดเวร:</span>
-            <div class="inline-flex rounded-xl bg-white border border-slate-300 p-0.5">
+            <span class="font-bold text-slate-700 dark:text-slate-300">⚙️ โหมดจัดเวร:</span>
+            <div class="inline-flex rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-0.5">
               <button id="mode2ShiftBtn" onclick="setShiftMode(2)" class="px-2.5 py-0.5 rounded-lg text-xs font-bold transition">
                 ☀️⛅ 2 เวร/วัน
               </button>
@@ -610,11 +610,14 @@
               </button>
             </div>
           </div>
-          <div class="text-slate-600 font-semibold text-xs">
-            ระบบจองเวรอิสระ | พยาบาลสามารถเลือกเวรซ้ำและพร้อมกันได้
-          </div>
+
+          <!-- วางปุ่ม ยืนยันจองตารางเวร แทนข้อความเดิม -->
+          <button id="adminSubmitRosterBtn" onclick="handleAdminSubmitRoster()"
+            class="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-700/30 border border-emerald-400/40 transition-all duration-200 transform hover:scale-105 active:scale-95 cursor-pointer">
+            <span class="text-sm">💾</span>
+            <span>ยืนยันจองตารางเวร</span>
+          </button>
         </div>
-      </div>
 
       <!-- Master Views Section -->
       <div id="masterMatrixSection">
@@ -1226,6 +1229,65 @@
       </div>
     </div>
   </div>
+
+  <!-- ==================== วางตรงนี้: 11. POPUP ระบบ CF (CONFIRM) จองก่อนได้ก่อน ==================== -->
+  <div id="fastClaimModal"
+    class="fixed inset-0 bg-slate-950/80 z-50 flex items-end sm:items-center justify-center hidden backdrop-blur-md p-0 sm:p-4">
+    <div class="glass-modal modal-sheet-panel rounded-t-3xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-6 border border-amber-300/60 dark:border-amber-500/40 shadow-2xl max-h-[90vh] flex flex-col bg-white/95 dark:bg-slate-900/95 overflow-hidden">
+      <div class="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-3 sm:hidden shrink-0"></div>
+
+      <!-- Header ระบบ CF -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-amber-200/80 dark:border-amber-900/50 mb-3.5 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-orange-500/30 animate-pulse border border-white/40">
+            ⚡
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-tight">
+                ระบบ CF (Confirm) จองก่อนได้ก่อน
+              </h3><div class="flex items-center gap-2 flex-wrap"></div>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-bounce shadow-xs">
+                LIVE CF
+              </span>
+            </div>
+            <p class="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
+              🚨 ตารางเวรยืนยันแล้ว • ใครกด CF ก่อนได้สิทธิ์ทันที • ปิดสิทธิ์อัตโนมัติเมื่อมีผู้ยืนยัน!
+            </p>
+          </div>
+        </div>
+        <button onclick="closeFastClaimModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Notice Banner -->
+      <div class="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800/60 mb-3 text-xs flex items-center justify-between">
+        <div class="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold">
+          <span>📢</span>
+          <span>เวรว่างที่เปิดให้ CF ในเดือนนี้: <b id="fastClaimVacantCount" class="text-rose-600 dark:text-rose-400 text-sm">0</b> เวร</span>
+        </div>
+        <button onclick="refreshFastClaimVacancies()" class="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold text-[11px] shadow-2xs hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer">
+          <span>🔄</span>
+          <span>อัปเดตเวรว่างล่าสุด</span>
+        </button>
+      </div>
+
+      <!-- Card List รายการเวรว่างสำหรับ CF -->
+      <div id="fastClaimListContainer" class="overflow-y-auto flex-1 pr-1 space-y-2.5 min-h-[220px]"></div>
+
+      <!-- Footer -->
+      <div class="pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
+        <div class="text-[11px] text-slate-400 font-medium">
+          * ข้อมูลการ CF จะบันทึกลง Google Sheets ทันทีที่กดยืนยัน
+        </div>
+        <button type="button" onclick="closeFastClaimModal()" class="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black transition cursor-pointer">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- ============================================================================== -->
 
   <!-- ==================== FIXED MOBILE BOTTOM NAVIGATION BAR ==================== -->
   <nav id="mobileBottomNav"
