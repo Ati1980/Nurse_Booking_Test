@@ -3,7 +3,7 @@
  * 🌐 SYSTEM CONFIGURATION & API ENDPOINTS (ตั้งค่าระบบหลัก & Google Cloud)
  * =========================================================================
  */
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw8O2-bNMUyBu7xRLrcrDulmM7lhWH357FneY3gW0Km0VUHHDaj-ei8rfwcwEtGx5d4/exec";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzsp9QTnNgASTNedOf6QvMMg6waFihxDm7EdvqSTXdVKkv4iC2W3H6xsIT-y2MOtWxo/exec";
 const DRIVE_FOLDER_ID = "1AagYBbJahbhkg9b8zEq-4K3EThnvKpiR";
 
 // 1. Data Definitions
@@ -1213,6 +1213,15 @@ window.handleShiftClick = function (day, shift) {
   }
 
   if (currentUser.role === 'nurse') {
+    // 🔒 ถ้าตารางเวรยืนยันแล้ว ไม่อนุญาตให้เปิดหน้าต่างจองปกติ
+    if (monthState && monthState.isConfirmed) {
+      window.showToast?.("🔒 ตารางเวรได้รับการยืนยันแล้ว กรุณาเลือกเวรผ่านระบบ CF");
+      if (typeof openFastClaimModal === 'function') {
+        openFastClaimModal();
+      }
+      return;
+    }
+
     const nurseId = currentUser.nurseId;
     const userCurrentShifts = (monthState.roster[nurseId] && monthState.roster[nurseId][day]) || [];
     const isAlreadyBooked = userCurrentShifts.includes(shift);
@@ -1464,7 +1473,9 @@ function renderNurseCalendar() {
   const nurseId = currentUser.nurseId;
   const daysCount = getDaysCount(currentYear, currentMonth);
   const firstDayIndex = getFirstDayIndex(currentYear, currentMonth);
+  const isConfirmed = !!(monthState && monthState.isConfirmed);
 
+  // คำนวณจำนวนเวร
   const nurseShifts = monthState.roster[nurseId] || {};
   let countM = 0, countA = 0, countN = 0;
   for (let d = 1; d <= daysCount; d++) {
@@ -1484,6 +1495,16 @@ function renderNurseCalendar() {
   const elStatTotal = document.getElementById('nurseStatTotal');
   if (elStatTotal) elStatTotal.innerText = `${totalShifts} เวร (${totalShifts * 8} ชม.)`;
 
+  // ซ่อนปุ่มยืนยันจองรอบปกติ เมื่อตารางได้รับการยืนยันแล้ว
+  const submitBtn = document.getElementById('submitNurseBookingBtn');
+  if (submitBtn) {
+    if (isConfirmed) {
+      submitBtn.classList.add('hidden');
+    } else {
+      submitBtn.classList.remove('hidden');
+    }
+  }
+
   const calHeader = document.getElementById('nurseCalendarHeader');
   if (calHeader) {
     calHeader.innerHTML = CALENDAR_HEADERS.map(ch => `
@@ -1499,6 +1520,7 @@ function renderNurseCalendar() {
   for (let pad = 0; pad < firstDayIndex; pad++) {
     calHtml += `<div class="calendar-empty-cell p-1 sm:p-2 flex items-start justify-end text-slate-300 dark:text-slate-600 select-none"><span class="opacity-25 font-mono text-xs">•</span></div>`;
   }
+
   for (let d = 1; d <= daysCount; d++) {
     const dt = new Date(currentYear, currentMonth, d);
     const dayOfWeek = dt.getDay();
@@ -1521,7 +1543,7 @@ function renderNurseCalendar() {
             else if (s === 'N') badgeStyle = 'bg-purple-50 text-purple-900 border-purple-200 dark:bg-purple-950/60 dark:text-purple-200 dark:border-purple-800';
 
             return `
-              <div class="flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs font-bold border shadow-2xs ${badgeStyle} transition hover:scale-[1.02]">
+              <div class="flex items-center gap-1.5 px-2 py-1 rounded-xl text-xs font-bold border shadow-2xs ${badgeStyle}">
                 <span class="text-sm shrink-0">${shiftObj.icon}</span>
                 <span class="font-bold truncate text-[11px] sm:text-xs">${shiftObj.name}</span>
               </div>
@@ -1531,10 +1553,15 @@ function renderNurseCalendar() {
       `;
     }
 
+    // 🔒 ถ้าตารางยืนยันแล้ว: เปลี่ยนเคอร์เซอร์เป็น default / not-allowed และปิดการคลิกแก้ไขปกติ
+    const cursorStyle = isConfirmed ? 'cursor-default opacity-95' : 'cursor-pointer hover:shadow-md';
+    const clickAction = isConfirmed ? `onclick="window.showToast?.('🔒 ตารางเวรยืนยันแล้ว ไม่สามารถแก้ไขได้'); openFastClaimModal();"` : `onclick="openCellEditor('${nurseId}', ${d})"`;
+    const titleText = isConfirmed ? `ตารางเวรยืนยันแล้ว (คลิกเพื่อเปิดระบบ CF)` : `คลิกเพื่อแก้ไขหรือจองเวรวันที่ ${d}`;
+
     calHtml += `
-      <div class="calendar-day-cell p-2 sm:p-2.5 rounded-2xl border ${dayCardBg} shadow-2xs hover:shadow-md transition cursor-pointer flex flex-col justify-between"
-           onclick="openCellEditor('${nurseId}', ${d})"
-           title="คลิกเพื่อแก้ไขหรือจองเวรวันที่ ${d}">
+      <div class="calendar-day-cell p-2 sm:p-2.5 rounded-2xl border ${dayCardBg} shadow-2xs transition flex flex-col justify-between ${cursorStyle}"
+           ${clickAction}
+           title="${titleText}">
         <div>
           <div class="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-700/50 mb-1">
             <span class="text-base sm:text-lg md:text-xl font-black ${dateNumColor}">${d}</span>
@@ -1547,8 +1574,12 @@ function renderNurseCalendar() {
       </div>
     `;
   }
+
   if (calGrid) calGrid.innerHTML = calHtml;
   updatePendingShiftBadgeUI();
+
+  // อัปเดตปุ่มแบนเนอร์ CF ในหน้าจองเวรของฉัน
+  updatePersonalCfBannerBtn();
 }
 
 function updateAdminSubViewButtons(activeSub) {
@@ -2038,9 +2069,9 @@ window.setDutyChartMode = function (mode) {
  * เปิดหน้าต่างแก้ไขเวรประจำวัน (Popup)
  */
 window.openCellEditor = function (nurseId, day) {
-  // บล็อกพยาบาลไม่ให้แก้ไขเวรเองเมื่อ Admin ยืนยันตารางจัดแล้ว
+  // 🔒 บล็อกพยาบาลไม่ให้แก้ไขเวรเมื่อ Admin ยืนยันตารางเวรแล้ว
   if (currentUser && currentUser.role === 'nurse' && monthState && monthState.isConfirmed) {
-    alert("🔒 ตารางเวรประจำเดือนได้รับการยืนยันแล้ว ไม่อนุญาตให้แก้ไขเวร\nกรุณาเข้าจองผ่าน 'ระบบ CF (Confirm) จองก่อนได้ก่อน'");
+    window.showToast?.("🔒 ตารางเวรยืนยันแล้ว กรุณาเลือกเวรผ่านระบบ CF");
     if (typeof openFastClaimModal === 'function') {
       openFastClaimModal();
     }
@@ -2056,7 +2087,6 @@ window.openCellEditor = function (nurseId, day) {
   if (nameEl && nurse) nameEl.innerText = `${nurse.name} (${nurse.id})`;
   if (dateEl) dateEl.innerText = `วันที่ ${day} ${THAI_MONTHS[currentMonth]}`;
 
-  // ดึงเวรเดิมที่เคยบันทึกไว้มาแสดงเป็นสถานะเริ่มต้นของ Checkbox
   const currentShifts = (monthState.roster && monthState.roster[nurseId] && (monthState.roster[nurseId][day] || monthState.roster[nurseId][String(day)])) || [];
   
   const cbM = document.getElementById('cellShiftM');
@@ -2791,7 +2821,74 @@ window.submitNurseBookingToSheet = async function () {
   }
 };
 
-window.fetchRosterFromSheet = async function (showLoadingToast = false) {
+window.fetchRosterFromSheet = async function (showLoadingToast = false) {window.fetchRosterFromSheet = async function (showLoadingToast = false) {
+  if (showLoadingToast) {
+    window.showToast?.("🔄 กำลังอ่านข้อมูลล่าสุดจาก Google Sheet...");
+  }
+  try {
+    const res = await fetch(`${GAS_API_URL}?year=${currentYear}&month=${currentMonth}&_nocache=${Date.now()}`);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (data.status === "success" && data.roster) {
+      const currentRosterStr = JSON.stringify(data.roster);
+
+      // ถ้าเป็น Admin และกำลังคลิกแก้เวรค้างไว้ (ยังไม่กดยืนยัน) ห้ามดึงข้อมูลเก่ามาทับ
+      if (currentUser && currentUser.role === 'admin' && typeof hasAdminUnsavedChanges !== 'undefined' && hasAdminUnsavedChanges) {
+        return;
+      }
+
+      // ถ้าหน้าจอปัจจุบันเป็นโหมดจองปกติ (isConfirmed = false) แต่ Server ดันส่งสถานะจัดเวรแล้วมา 
+      // และ Admin ไม่ได้เป็นคนสั่งจัดเวร ให้ข้ามเพื่อไม่ให้ตารางจัดเวรมาทับข้อมูลการจองดิบ
+      if (!monthState.isConfirmed && data.isConfirmed) {
+        return;
+      }
+
+      if (currentRosterStr !== lastKnownRosterHash) {
+        lastKnownRosterHash = currentRosterStr;
+
+        if (!monthState) monthState = {};
+        monthState.isConfirmed = !!data.isConfirmed;
+
+        // ดึงข้อมูลเวรทั้งหมดจาก Server มาใช้งานตรงๆ
+        monthState.roster = JSON.parse(JSON.stringify(data.roster));
+
+        // สำหรับ User: ซิงค์ Snapshot
+        if (currentUser && currentUser.role === 'nurse') {
+          const myShifts = data.roster[currentUser.nurseId] || {};
+          syncedNurseShiftsSnapshot = JSON.parse(JSON.stringify(myShifts));
+          localStorage.setItem(`nurse_synced_shifts_${currentUser.nurseId}_${currentYear}_${currentMonth}`, JSON.stringify(syncedNurseShiftsSnapshot));
+
+          const draftKey = `nurse_draft_${currentUser.nurseId}_${currentYear}_${currentMonth}`;
+          localStorage.removeItem(draftKey);
+        }
+
+        localStorage.setItem(getStorageKey(), JSON.stringify(monthState));
+
+        // อัปเดตการแสดงผลทุกหน้าจอ
+        renderPublicDashboard();
+        if (activeView === 'personal') renderNurseCalendar();
+        if (activeView === 'admin') renderAdminView();
+        if (activeView === 'excel') renderExcelView('userExcelViewContent');
+
+        const fastClaimModal = document.getElementById('fastClaimModal');
+        if (fastClaimModal && !fastClaimModal.classList.contains('hidden')) {
+          renderFastClaimList();
+        }
+
+        if (typeof updatePendingShiftBadgeUI === 'function') {
+          updatePendingShiftBadgeUI();
+        }
+
+        if (showLoadingToast) {
+          window.showToast?.("✅ โหลดข้อมูลจาก Database สำเร็จ");
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Fetch roster error:", e);
+  }
+};
   if (showLoadingToast) {
     window.showToast?.("🔄 กำลังอ่านข้อมูลล่าสุดจาก Google Sheet...");
   }
@@ -2920,6 +3017,9 @@ function auditRosterIntegrity(rosterToCheck) {
 /**
  * ฟังก์ชันจัดตารางเวรอัตโนมัติ (Global Fair Allocation ตามเงื่อนไข 9 ข้อ)
  */
+/**
+ * 1. ฟังก์ชันจัดตารางเวรอัตโนมัติ (คำนวณแบบ Real-time พร้อมแสดง Slot จริงทีละขั้น)
+ */
 async function runOptimization() {
   const modal = document.getElementById('optimizeModal');
   const daysCount = getDaysCount(currentYear, currentMonth);
@@ -2927,12 +3027,14 @@ async function runOptimization() {
   const shiftsPerDay = activeShifts.length;
   const totalSlots = daysCount * shiftsPerDay;
 
-  // 1. เก็บ Snapshot คำขอจองเดิมไว้เป็นมาตรฐานตรวจสอบ
+  showActionProgress("ระบบจัดตารางเวรอัตโนมัติ", "กำลังเตรียมฐานข้อมูลคำขอจอง...");
+  updateActionProgress(5, "รวบรวมคำขอจองเดิมของพยาบาล...", "เตรียมข้อมูล (5%)", "📋");
+  await new Promise(r => setTimeout(r, 120));
+
   if (!monthState.raw_roster || Object.keys(monthState.raw_roster).length === 0) {
     monthState.raw_roster = JSON.parse(JSON.stringify(monthState.roster || {}));
   }
 
-  // 2. คำนวณจำนวนเวรที่พยาบาลแต่ละท่านขอมา
   const initialRequests = {};
   NURSES.forEach(n => {
     let count = 0;
@@ -2943,14 +3045,13 @@ async function runOptimization() {
     initialRequests[n.id] = count;
   });
 
-  // กฎข้อ 6: พยาบาลที่เลือก 0 เวร จะไม่นำมาจัดสรร
   const participatingNurses = NURSES.filter(n => (initialRequests[n.id] || 0) > 0);
   if (participatingNurses.length === 0) {
+    closeActionProgress(0);
     alert('⚠️ ยังไม่มีพยาบาลท่านใดกดเลือกเวรในเดือนนี้');
     return;
   }
 
-  // 3. คำนวณจำนวนเวรที่มีคนเลือกจริง (Unique Slots) และค่าเฉลี่ยพึงจัด (targetAvg)
   let assignedSlotsCount = 0;
   for (let d = 1; d <= daysCount; d++) {
     activeShifts.forEach(s => {
@@ -2965,38 +3066,26 @@ async function runOptimization() {
   const rawAvg = assignedSlotsCount / participatingNurses.length;
   const targetAvg = roundCustomHalf(rawAvg);
 
-  // เตรียมโครงสร้างตารางเวรผลลัพธ์
   const optimizedRoster = {};
   NURSES.forEach(n => { optimizedRoster[n.id] = {}; });
-
   const currentAssignedCount = {};
   participatingNurses.forEach(n => { currentAssignedCount[n.id] = 0; });
 
-  // กฎข้อ 8: ตรวจสอบความปลอดภัยและสุขอนามัย
   function canAssign(nurseId, day, shift) {
     const todayShifts = optimizedRoster[nurseId][day] || [];
-    // ห้ามเกิน 2 เวรต่อวัน
     if (todayShifts.length >= 2) return false;
-
-    // ถ้าลงเวรเช้า (M) วันก่อนหน้าต้องไม่ควง บ่าย(A) + ดึก(N)
     if (shift === 'M' && day > 1) {
       const prevShifts = optimizedRoster[nurseId][day - 1] || [];
-      if (prevShifts.includes('A') && prevShifts.includes('N')) {
-        return false;
-      }
+      if (prevShifts.includes('A') && prevShifts.includes('N')) return false;
     }
-    // ถ้าจะลงเวรบ่าย/ดึก ให้ตรวจวันถัดไปด้วยว่าบล็อกเช้าของวันถัดไปที่ลงไว้แล้วหรือไม่
     if ((shift === 'A' || shift === 'N') && day < daysCount) {
       const nextShifts = optimizedRoster[nurseId][day + 1] || [];
       const willHaveAN = (shift === 'A' && todayShifts.includes('N')) || (shift === 'N' && todayShifts.includes('A'));
-      if (willHaveAN && nextShifts.includes('M')) {
-        return false;
-      }
+      if (willHaveAN && nextShifts.includes('M')) return false;
     }
     return true;
   }
 
-  // รวบรวมทุก Slot ของทั้งเดือนที่มีคนจอง (กฎข้อ 9: เวรไม่มีคนจองจะถูกข้ามไป)
   const availableSlots = [];
   for (let d = 1; d <= daysCount; d++) {
     activeShifts.forEach(s => {
@@ -3004,78 +3093,80 @@ async function runOptimization() {
         const userDayShifts = (monthState.raw_roster[n.id] && monthState.raw_roster[n.id][d]) || [];
         return userDayShifts.includes(s);
       });
-      if (applicants.length > 0) {
-        availableSlots.push({ day: d, shift: s, applicants });
-      }
+      if (applicants.length > 0) availableSlots.push({ day: d, shift: s, applicants });
     });
   }
 
-  // จัดเรียง Slot ตามจำนวนคนแข่ง: จัด Slot ที่มีคนแย่งน้อยก่อน เพื่อไม่ให้เวรหลุดมือ
   availableSlots.sort((a, b) => a.applicants.length - b.applicants.length);
+  const totalProcessSlots = availableSlots.length;
 
-  // วนจัดสรรเวร
-  availableSlots.forEach(slot => {
+  for (let idx = 0; idx < totalProcessSlots; idx++) {
+    const slot = availableSlots[idx];
     const { day, shift, applicants } = slot;
-
-    // กรองเฉพาะผู้ที่สามารถลงเวรได้ตามกฎความปลอดภัย
     const validCandidates = applicants.filter(n => canAssign(n.id, day, shift));
-    if (validCandidates.length === 0) return;
 
-    // จัดลำดับความสำคัญ (Priority Sorting)
-    validCandidates.sort((a, b) => {
-      // 1. ให้สิทธิ์คนที่วันนี้ยังไม่มีเวรเลยก่อน (ลดการควงเวร)
-      const dayCountA = (optimizedRoster[a.id][day] || []).length;
-      const dayCountB = (optimizedRoster[b.id][day] || []).length;
-      if (dayCountA !== dayCountB) return dayCountA - dayCountB;
+    if (validCandidates.length > 0) {
+      validCandidates.sort((a, b) => {
+        const dayCountA = (optimizedRoster[a.id][day] || []).length;
+        const dayCountB = (optimizedRoster[b.id][day] || []).length;
+        if (dayCountA !== dayCountB) return dayCountA - dayCountB;
 
-      const reqA = initialRequests[a.id];
-      const reqB = initialRequests[b.id];
-      const curA = currentAssignedCount[a.id];
-      const curB = currentAssignedCount[b.id];
+        const reqA = initialRequests[a.id];
+        const reqB = initialRequests[b.id];
+        const curA = currentAssignedCount[a.id];
+        const curB = currentAssignedCount[b.id];
+        const targetA = reqA < targetAvg ? reqA : targetAvg;
+        const targetB = reqB < targetAvg ? reqB : targetAvg;
 
-      // เป้าหมายขั้นต่ำของแต่ละคน
-      const targetA = reqA < targetAvg ? reqA : targetAvg;
-      const targetB = reqB < targetAvg ? reqB : targetAvg;
+        const aNeedsTarget = curA < targetA;
+        const bNeedsTarget = curB < targetB;
+        if (aNeedsTarget && !bNeedsTarget) return -1;
+        if (!aNeedsTarget && bNeedsTarget) return 1;
+        if (curA !== curB) return curA - curB;
 
-      // ใครที่ยังไม่ถึงเป้าหมายขั้นต่ำของตัวเอง ได้สิทธิ์ก่อนเด็ดขาด
-      const aNeedsTarget = curA < targetA;
-      const bNeedsTarget = curB < targetB;
-      if (aNeedsTarget && !bNeedsTarget) return -1;
-      if (!aNeedsTarget && bNeedsTarget) return 1;
+        const aBelow = reqA < targetAvg;
+        const bBelow = reqB < targetAvg;
+        if (aBelow && !bBelow) return -1;
+        if (!aBelow && bBelow) return 1;
 
-      // ถ้าต้องการทั้งคู่: ใครได้เวรสะสมน้อยกว่า ให้คนนั้นได้ก่อน
-      if (curA !== curB) return curA - curB;
+        return reqB - reqA;
+      });
 
-      // กฎข้อ 1 vs 2: กลุ่มขอ < targetAvg ได้รับก่อน
-      const aBelow = reqA < targetAvg;
-      const bBelow = reqB < targetAvg;
-      if (aBelow && !bBelow) return -1;
-      if (!aBelow && bBelow) return 1;
-
-      // กฎข้อ 5: ถ้าทุกคนแตะเกณฑ์แล้ว เกลี่ยให้ผู้ที่ขอยอดรวมมากที่สุด
-      return reqB - reqA;
-    });
-
-    const winner = validCandidates[0];
-
-    // [ตรวจสอบป้องกันขั้นเด็ดขาด] ยืนยันว่าคนชนะได้กดจองเวรนี้ในวันนี้จริง
-    const userRequestedShifts = monthState.raw_roster?.[winner.id]?.[day] || [];
-    if (userRequestedShifts.includes(shift)) {
-      if (!optimizedRoster[winner.id][day]) optimizedRoster[winner.id][day] = [];
-      optimizedRoster[winner.id][day].push(shift);
-      currentAssignedCount[winner.id]++;
-    } else {
-      console.warn(`[Blocked] พยาบาล ${winner.name} (${winner.id}) ไม่ได้จองเวร ${shift} วันที่ ${day}`);
+      const winner = validCandidates[0];
+      const userRequestedShifts = monthState.raw_roster?.[winner.id]?.[day] || [];
+      if (userRequestedShifts.includes(shift)) {
+        if (!optimizedRoster[winner.id][day]) optimizedRoster[winner.id][day] = [];
+        optimizedRoster[winner.id][day].push(shift);
+        currentAssignedCount[winner.id]++;
+      }
     }
-  });
 
-  // ตรวจสอบความถูกต้องทั้งตารางอีกรอบก่อนนำไปแสดงผล
+    if (idx % 2 === 0 || idx === totalProcessSlots - 1) {
+      const progressPercent = Math.round(10 + ((idx + 1) / totalProcessSlots) * 75);
+      updateActionProgress(
+        progressPercent,
+        `กำลังจัดสรรเวรวันที่ ${day} (${SHIFTS[shift].name})...`,
+        `ประมวลผล ${idx + 1}/${totalProcessSlots} เวร (${progressPercent}%)`,
+        "⚙️"
+      );
+      await new Promise(r => setTimeout(r, 10));
+    }
+  }
+
+  updateActionProgress(92, "ตรวจสอบความถูกต้องของสิทธิ์และข้อกำหนด 9 ข้อ...", "ตรวจสอบสิทธิ์ (92%)", "🔍");
+  await new Promise(r => setTimeout(r, 120));
+
   if (!auditRosterIntegrity(optimizedRoster)) {
+    closeActionProgress(0);
     return;
   }
 
-  // บันทึกผลลัพธ์
   window.pendingOptimizedRoster = optimizedRoster;
+
+  updateActionProgress(100, "คำนวณและประมวลผลเสร็จสมบูรณ์!", "เสร็จสิ้น (100%)", "✅");
+  await new Promise(r => setTimeout(r, 180));
+
+  closeActionProgress(80);
 
   renderOptimizationResultModal({
     daysCount,
@@ -3265,94 +3356,118 @@ async function autoSaveExcelToDrive(rosterData) {
   }
 }
 
+/**
+ * 2. ฟังก์ชันยืนยันตารางเวร (แสดง Progress บันทึกขึ้น Google Sheets และ Google Drive จริง)
+ */
 async function confirmOptimization() {
-  if (window.pendingOptimizedRoster) {
-    if (!auditRosterIntegrity(window.pendingOptimizedRoster)) {
-      alert("ไม่สามารถยืนยันตารางได้เนื่องจากพบข้อผิดพลาดของข้อมูลเวร");
-      return;
-    }
+  if (!window.pendingOptimizedRoster) return;
 
-    // เก็บตารางคำขอจองเดิมไว้เป็น Snapshot (สำหรับกดยกเลิกหรือตรวจสอบย้อนหลัง)
-    if (!monthState.raw_roster || Object.keys(monthState.raw_roster).length === 0) {
-      monthState.raw_roster = JSON.parse(JSON.stringify(monthState.roster || {}));
-    }
-
-    // 1. นำตารางที่จัดเสร็จแล้วมาใช้งาน และตั้งสถานะเป็น Confirmed (เริ่มโหมด CF)
-    monthState.roster = window.pendingOptimizedRoster;
-    monthState.round = 3;
-    monthState.isConfirmed = true; 
-    saveMonthState();
-
-    autoSaveExcelToDrive(monthState.roster);
-
-    window.showToast?.("☁️ กำลังบันทึกตารางที่จัดแล้วเข้าสู่ระบบ CF...");
-
-    // 2. ส่งขึ้น Google Sheets แท็บ Confirmed_Roster ทันที
-    try {
-      const clientIp = await getClientIP();
-      await fetch(GAS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: new URLSearchParams({
-          data: JSON.stringify({
-            action: "sync_confirmed_roster",
-            year: currentYear,
-            month: currentMonth,
-            roster: monthState.roster,
-            audit: {
-              ip: clientIp,
-              device: navigator.userAgentData?.platform || navigator.platform || 'Admin-Device',
-              userAgent: navigator.userAgent + " [ADMIN-CONFIRMED-OPTIMIZE]",
-              timestamp: new Date().toISOString()
-            }
-          })
-        })
-      });
-    } catch (e) {
-      console.error("Sync confirmed roster error:", e);
-    }
-
-    window.pendingOptimizedRoster = null;
-    triggerFireworks(1800);
-    window.showToast?.("⚡ จัดตารางเวรสำเร็จ! เปิดระบบ CF (จองก่อนได้ก่อน) เรียบร้อยแล้ว");
+  if (!auditRosterIntegrity(window.pendingOptimizedRoster)) {
+    alert("ไม่สามารถยืนยันตารางได้เนื่องจากพบข้อผิดพลาดของข้อมูลเวร");
+    return;
   }
 
   document.getElementById('optimizeModal')?.classList.add('hidden');
-  renderAdminView(); // จุดนี้ปุ่ม '❌ ยกเลิกการยืนยัน' (วงที่ 2) ถึงจะแสดงขึ้นมา
+  
+  showActionProgress("กำลังบันทึกตารางเวร", "บันทึกตารางลงหน่วยความจำชั่วคราว...");
+  updateActionProgress(15, "ปรับสถานะตารางเป็นยืนยันแล้ว (Confirmed)...", "Step 1/3 (15%)", "💾");
+  await new Promise(r => setTimeout(r, 150));
+
+  if (!monthState.raw_roster || Object.keys(monthState.raw_roster).length === 0) {
+    monthState.raw_roster = JSON.parse(JSON.stringify(monthState.roster || {}));
+  }
+
+  monthState.roster = window.pendingOptimizedRoster;
+  monthState.round = 3;
+  monthState.isConfirmed = true; 
+  saveMonthState();
+
+  updateActionProgress(45, "กำลังส่งไฟล์ Excel ไปยัง Google Drive...", "Step 2/3 (45%)", "📁");
+  autoSaveExcelToDrive(monthState.roster);
+
+  updateActionProgress(70, "กำลังซิงค์ข้อมูลเข้า Google Sheets (Confirmed_Roster)...", "Step 3/3 (70%)", "☁️");
+
+  try {
+    const clientIp = await getClientIP();
+    await fetch(GAS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: new URLSearchParams({
+        data: JSON.stringify({
+          action: "sync_confirmed_roster",
+          year: currentYear,
+          month: currentMonth,
+          roster: monthState.roster,
+          audit: {
+            ip: clientIp,
+            device: navigator.userAgentData?.platform || navigator.platform || 'Admin-Device',
+            userAgent: navigator.userAgent + " [ADMIN-CONFIRMED-OPTIMIZE]",
+            timestamp: new Date().toISOString()
+          }
+        })
+      })
+    });
+
+    updateActionProgress(100, "บันทึกเรียบร้อย และเปิดระบบ CF สมบูรณ์แล้ว!", "สำเร็จ (100%)", "🎉");
+  } catch (e) {
+    console.error("Sync confirmed roster error:", e);
+    updateActionProgress(100, "บันทึกเสร็จสิ้น!", "เสร็จสิ้น", "✅");
+  }
+
+  window.pendingOptimizedRoster = null;
+  triggerFireworks(1800);
+  closeActionProgress(450);
+
+  renderAdminView();
   renderPublicDashboard();
   updateNavSwitcher(activeView);
   if (activeView === 'personal') renderNurseCalendar();
   if (activeView === 'excel') renderExcelView('userExcelViewContent');
+  window.showToast?.("⚡ จัดตารางเวรสำเร็จ! เปิดระบบ CF เรียบร้อยแล้ว");
 }
 
 function cancelOptimization() {
   window.pendingOptimizedRoster = null;
+
+  document.getElementById('optimizeModal')?.classList.add('hidden');
+  document.getElementById('actionProgressModal')?.classList.add('hidden');
+
+  showActionProgress("ยกเลิกการจัดสรร", "กำลังคืนค่าข้อมูลการจองเดิม...");
+  updateActionProgress(60, "กำลังดึงตารางคำขอของพยาบาลกลับมา...", "คืนค่าข้อมูล", "↩️");
 
   if (monthState.raw_roster && Object.keys(monthState.raw_roster).length > 0) {
     monthState.roster = JSON.parse(JSON.stringify(monthState.raw_roster));
     saveMonthState();
   }
 
-  document.getElementById('optimizeModal')?.classList.add('hidden');
+  updateActionProgress(100, "คืนค่าเดิมเรียบร้อยแล้ว", "เสร็จสิ้น", "✅");
+  closeActionProgress(250);
+
   renderAdminView();
   renderPublicDashboard();
-  window.showToast('↩️ ยกเลิกผลการจัดเวร และดึงข้อมูลการจองของพยาบาลกลับมาเรียบร้อยแล้ว');
+  window.showToast?.('↩️ ยกเลิกผลการจัดเวร และดึงข้อมูลการจองของพยาบาลกลับมาเรียบร้อยแล้ว');
 }
+window.cancelOptimization = cancelOptimization;
 
 window.handleUnconfirmSchedule = async function () {
   const monthName = THAI_MONTHS[currentMonth];
   const yearBE = currentYear + 543;
   if (confirm(`คุณต้องการยกเลิกตารางเวรที่จัดแล้ว และกลับไปใช้ข้อมูลการจองเดิมของเดือน ${monthName} ${yearBE} ใช่หรือไม่?`)) {
+    
+    showActionProgress("ยกเลิกตารางเวร", "กำลังเริ่มกระบวนการยกเลิก...");
+    updateActionProgress(25, "คืนค่าคำขอจองเดิมของพยาบาล...", "Step 1/3", "↩️");
+    await new Promise(r => setTimeout(r, 200));
+
     monthState.isConfirmed = false;
 
-    // ดึงข้อมูลคำขอจองเดิมของพยาบาลกลับมา
     if (monthState.raw_roster && Object.keys(monthState.raw_roster).length > 0) {
       monthState.roster = JSON.parse(JSON.stringify(monthState.raw_roster));
     }
 
     saveMonthState();
 
-    // สั่งล้างข้อมูลในแท็บ Confirmed_Roster บน Google Sheets
+    updateActionProgress(70, "กำลังล้างแท็บ Confirmed_Roster บน Google Sheets...", "Step 2/3", "☁️");
+
     try {
       await fetch(GAS_API_URL, {
         method: "POST",
@@ -3362,11 +3477,16 @@ window.handleUnconfirmSchedule = async function () {
             action: "sync_confirmed_roster",
             year: currentYear,
             month: currentMonth,
-            roster: {} // ส่งว่างไปเพื่อเคลียร์ตารางยืนยันออก
+            roster: {}
           })
         })
       });
-    } catch (e) { }
+    } catch (e) {
+      console.error(e);
+    }
+
+    updateActionProgress(100, "กลับสู่โหมดจองปกติเรียบร้อยแล้ว", "Step 3/3", "✅");
+    closeActionProgress(500);
 
     renderAdminView();
     renderPublicDashboard();
@@ -3755,7 +3875,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('viewVacanciesBtn')?.addEventListener('click', () => { adminActiveSubView = 'vacancies'; renderAdminSubView(); });
     document.getElementById('viewChartBtn')?.addEventListener('click', () => { adminActiveSubView = 'chart'; renderAdminSubView(); });
 
-    document.getElementById('adminOptimizeBtn')?.addEventListener('click', runOptimization);
+    document.getElementById('adminSubmitRosterBtn')?.addEventListener('click', handleAdminSubmitRoster);
     document.getElementById('openBookingModalBtn')?.addEventListener('click', openBookingModal);
     document.getElementById('exportExcelBtn')?.addEventListener('click', exportRoster);
     document.getElementById('printBtn')?.addEventListener('click', () => window.print());
@@ -3793,7 +3913,8 @@ window.handleAdminRefresh = function () {
 };
 
 /**
- * ฟังก์ชันสำหรับ Admin กดยืนยันบันทึกการจองตารางเวรทั้งหมด (บันทึกคำขอจอง ไม่ใช่การจัดตารางเวร)
+ * ฟังก์ชันสำหรับ Admin กดบันทึกข้อมูลการจองตารางเวรลง Google Sheets
+ * (บันทึกเฉพาะข้อมูลการจองดิบเท่านั้น ไม่มีการจัดเวร และไม่เกี่ยวกับระบบจัดตารางเวร)
  */
 window.handleAdminSubmitRoster = async function () {
   if (!currentUser || currentUser.role !== 'admin') {
@@ -3814,20 +3935,30 @@ window.handleAdminSubmitRoster = async function () {
   if (btn) {
     btn.disabled = true;
     btn.classList.add('opacity-75', 'cursor-wait');
-    btn.innerHTML = `<span class="animate-spin text-sm">⏳</span><span>กำลังบันทึก...</span>`;
+    btn.innerHTML = `<span class="animate-spin text-sm">⏳</span><span>กำลังบันทึกข้อมูลลง Google Sheets...</span>`;
   }
 
   try {
     const clientIp = await getClientIP();
+
+    // 1. ล็อกสถานะว่า "ยังไม่ได้จัดตารางเวร" (isConfirmed = false) อย่างเด็ดขาด
+    monthState.isConfirmed = false;
+    if (!monthState.raw_roster || Object.keys(monthState.raw_roster).length === 0) {
+      monthState.raw_roster = JSON.parse(JSON.stringify(monthState.roster || {}));
+    }
+    saveMonthState();
+
+    // 2. ส่งข้อมูลการจองดิบขึ้น Google Sheets พร้อมสั่งล้างตารางจัดเวรเดิมที่อาจค้างอยู่บน Sheet
     const payload = {
       action: "sync_month_roster", // บันทึกคำขอจองลงแท็บ Bookings ตามปกติ
       year: currentYear,
       month: currentMonth,
       roster: monthState.roster || {},
+      isConfirmed: false, // สั่งให้ Sheet ทราบว่าอยู่ในโหมดจองปกติ
       audit: {
         ip: clientIp,
         device: navigator.userAgentData?.platform || navigator.platform || 'Admin-Device',
-        userAgent: navigator.userAgent + " [ADMIN-BOOKING-SYNC]",
+        userAgent: navigator.userAgent + " [ADMIN-SAVE-BOOKINGS-ONLY]",
         timestamp: new Date().toISOString()
       }
     };
@@ -3840,23 +3971,17 @@ window.handleAdminSubmitRoster = async function () {
 
     const resJson = await response.json();
     if (resJson.status === "success") {
-      // 1. ปลดล็อกสถานะการแก้ไขค้าง เพื่อให้ฝั่ง User และ Admin แลกเปลี่ยนข้อมูลกันได้ทันที
       hasAdminUnsavedChanges = false;
       lastKnownRosterHash = JSON.stringify(monthState.roster);
 
-      // 2. คงสถานะ isConfirmed เป็น false (ไม่สลับไปโหมดจัดตารางเวร)
-      monthState.isConfirmed = false;
-      saveMonthState();
-
-      // 3. ปลดเอฟเฟกต์ไฟกระพริบเตือนออกจากปุ่ม
       if (btn) {
         btn.classList.remove('ring-4', 'ring-amber-400', 'animate-pulse');
       }
 
-      triggerFireworks(1800);
-      window.showToast?.("✅ บันทึกข้อมูลการจองตารางเวรลง Database เรียบร้อยแล้ว");
+      window.showToast?.("✅ บันทึกข้อมูลการจองลง Google Sheets เรียบร้อยแล้ว");
 
-      renderAdminView(); // อัปเดตหน้าจอ โดยปุ่มยกเลิกการยืนยัน (วงที่ 2) จะไม่แสดง
+      // 3. วาดตารางตามข้อมูลการจองดิบเดิมเท่านั้น
+      renderAdminView();
       renderPublicDashboard();
       if (activeView === 'excel') renderExcelView('userExcelViewContent');
     } else {
@@ -3924,9 +4049,72 @@ window.openFastClaimModal = function () {
   document.getElementById('fastClaimModal')?.classList.remove('hidden');
 };
 
+// =========================================================================
+// ⚡ จัดการการปิด-เปิด MODAL CF และแสดงปุ่มในหน้า "จองเวรของฉัน"
+// =========================================================================
 window.closeFastClaimModal = function () {
   document.getElementById('fastClaimModal')?.classList.add('hidden');
+  
+  // เมื่อปิดหน้าต่าง CF ให้อัปเดตปุ่ม CF ในหน้า "จองเวรของฉัน" ทันที
+  updatePersonalCfBannerBtn();
 };
+
+/**
+ * แสดงหรือซ่อนปุ่ม CF แบนเนอร์ในหน้า "จองเวรของฉัน"
+ */
+function updatePersonalCfBannerBtn() {
+  const nurseSection = document.getElementById('nursePersonalSection');
+  if (!nurseSection) return;
+
+  let cfBanner = document.getElementById('nursePersonalCfBannerBtn');
+  const isConfirmed = !!(monthState && monthState.isConfirmed);
+  const vacantList = typeof getVacantShifts === 'function' ? getVacantShifts() : [];
+
+  // แสดงปุ่มเฉพาะเมื่อตารางยืนยันแล้ว และยังมีเวรว่างเหลืออยู่
+  if (isConfirmed && vacantList.length > 0 && currentUser && currentUser.role === 'nurse') {
+    if (!cfBanner) {
+      cfBanner = document.createElement('div');
+      cfBanner.id = 'nursePersonalCfBannerBtn';
+      cfBanner.className = 'mb-4';
+
+      // แทรกไว้ก่อนหน้าปฏิทินเวรของฉัน
+      const calGrid = document.getElementById('nurseCalendarGrid');
+      if (calGrid && calGrid.parentNode) {
+        calGrid.parentNode.insertBefore(cfBanner, calGrid.previousElementSibling || calGrid);
+      } else {
+        nurseSection.prepend(cfBanner);
+      }
+    }
+
+    cfBanner.innerHTML = `
+      <div onclick="openFastClaimModal()" 
+           class="w-full p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/25 flex items-center justify-between cursor-pointer transform hover:scale-[1.01] active:scale-[0.99] transition-all">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0">
+            ⚡
+          </div>
+          <div class="text-left">
+            <div class="text-xs sm:text-sm font-black flex items-center gap-2">
+              <span>ระบบ CF (Confirm) เวรว่าง — จองก่อนได้ก่อน!</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-white text-orange-600 font-extrabold uppercase animate-pulse">Live</span>
+            </div>
+            <div class="text-[11px] sm:text-xs text-orange-100 font-medium">
+              ขณะนี้มีเวรว่างเปิดให้แย่งสิทธิ์คงเหลือ <b class="text-white underline">${vacantList.length} เวร</b> (คลิกที่นี่เพื่อเปิดหน้าต่าง CF)
+            </div>
+          </div>
+        </div>
+        <button type="button" class="px-3.5 py-1.5 bg-white text-orange-600 rounded-xl text-xs font-black shadow-sm shrink-0">
+          เปิดหน้าต่าง CF
+        </button>
+      </div>
+    `;
+    cfBanner.classList.remove('hidden');
+  } else {
+    if (cfBanner) {
+      cfBanner.classList.add('hidden');
+    }
+  }
+}
 
 window.refreshFastClaimVacancies = async function () {
   window.showToast?.("🔄 กำลังเช็กเวรว่างล่าสุด...");
@@ -4083,23 +4271,22 @@ window.executeFastClaim = async function (day, shift, btnElement) {
 
     const resJson = await response.json();
     if (resJson.status === "success") {
-      // อัปเดต Hash ทันทีเพื่อป้องกันไม่ให้ Auto-fetch ดึงของเก่ามาทับ
-      lastKnownRosterHash = JSON.stringify(monthState.roster);
-      saveMonthState();
-
       triggerFireworks(1800);
       window.showToast?.(`⚡ คุณ CF เวรวันที่ ${day} (${SHIFTS[shift].name}) สำเร็จแล้ว!`);
       
-      // อัปเดตหน้าต่าง CF ทันที โดยเวรที่กดไปจะหายไป เหลือเฉพาะเวรที่ว่างจริง
-      renderFastClaimList();
+      saveMonthState();
+      lastKnownRosterHash = JSON.stringify(monthState.roster);
+
+      // อัปเดตหน้าจอพื้นหลัง
       renderPublicDashboard();
       if (activeView === 'personal') renderNurseCalendar();
       if (activeView === 'excel') renderExcelView('userExcelViewContent');
+
+      // 💡 ค้างหน้าต่าง CF ไว้ และเรนเดอร์ตัดเวรที่ถูกจองแล้วออกทันที
+      renderFastClaimList();
+      updatePersonalCfBannerBtn();
     } else {
       alert("เกิดข้อผิดพลาดในการบันทึก: " + resJson.message);
-      // หากบันทึกไม่สำเร็จ ให้ดึงตารางจริงกลับมา
-      await window.fetchRosterFromSheet(false);
-      renderFastClaimList();
     }
   } catch (err) {
     console.error("Fast Claim Error:", err);
@@ -4112,3 +4299,100 @@ window.executeFastClaim = async function (day, shift, btnElement) {
     }
   }
 };
+
+// =========================================================================
+// 🌟 POPUP PROGRESS BAR ANIMATION (ระบบแสดงสถานะแบบเคลื่อนไหว)
+// =========================================================================
+function showActionProgress(title, initialStatus = "กำลังเริ่มต้นระบบ...") {
+  let modal = document.getElementById('actionProgressModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'actionProgressModal';
+    modal.className = 'fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all duration-300';
+    modal.innerHTML = `
+      <style>
+        @keyframes shimmerPulse {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        .progress-shimmer {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+          animation: shimmerPulse 1.6s infinite;
+        }
+        .modal-bounce-in {
+          animation: popModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes popModal {
+          0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      </style>
+      <div class="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-3xl p-6 sm:p-7 max-w-sm w-full mx-4 shadow-2xl border border-white/60 dark:border-slate-700/80 text-center modal-bounce-in overflow-hidden">
+        <div class="absolute -top-10 -left-10 w-28 h-28 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute -bottom-10 -right-10 w-28 h-28 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="relative w-14 h-14 mx-auto mb-3.5 flex items-center justify-center">
+          <div class="absolute inset-0 rounded-2xl bg-blue-600/20 animate-ping"></div>
+          <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <span id="progressIconBadge" class="text-2xl">⚡</span>
+          </div>
+        </div>
+
+        <h3 id="progressModalTitle" class="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">
+          ${title}
+        </h3>
+        <p id="progressModalStatus" class="text-xs font-semibold text-slate-500 dark:text-slate-400 min-h-[18px]">
+          ${initialStatus}
+        </p>
+
+        <div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3.5 my-4 overflow-hidden p-0.5 border border-slate-200/80 dark:border-slate-700 shadow-inner">
+          <div id="progressModalBar" class="relative bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-200 ease-out overflow-hidden" style="width: 5%;">
+            <div class="progress-shimmer"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] font-mono font-bold text-slate-400 dark:text-slate-500 px-1">
+          <span id="progressModalDetail">เริ่มต้น</span>
+          <span id="progressModalPercent" class="text-blue-600 dark:text-blue-400 font-black">5%</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  const titleEl = document.getElementById('progressModalTitle');
+  const statusEl = document.getElementById('progressModalStatus');
+  const barEl = document.getElementById('progressModalBar');
+  const percentEl = document.getElementById('progressModalPercent');
+
+  if (titleEl) titleEl.innerText = title;
+  if (statusEl) statusEl.innerText = initialStatus;
+  if (barEl) barEl.style.width = '6%';
+  if (percentEl) percentEl.innerText = '6%';
+
+  modal.classList.remove('hidden');
+}
+
+function updateActionProgress(percent, statusText, stepDetail = "", icon = "⚡") {
+  const barEl = document.getElementById('progressModalBar');
+  const statusEl = document.getElementById('progressModalStatus');
+  const percentEl = document.getElementById('progressModalPercent');
+  const detailEl = document.getElementById('progressModalDetail');
+  const iconBadge = document.getElementById('progressIconBadge');
+
+  const p = Math.min(100, Math.max(0, percent));
+  if (barEl) barEl.style.width = `${p}%`;
+  if (statusEl && statusText) statusEl.innerText = statusText;
+  if (percentEl) percentEl.innerText = `${p}%`;
+  if (detailEl && stepDetail) detailEl.innerText = stepDetail;
+  if (iconBadge && icon) iconBadge.innerText = icon;
+}
+
+function closeActionProgress(delayMs = 250) {
+  setTimeout(() => {
+    const modal = document.getElementById('actionProgressModal');
+    if (modal) modal.classList.add('hidden');
+  }, delayMs);
+}
